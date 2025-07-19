@@ -1,35 +1,60 @@
-import { WebSocketServer, WebSocket } from "ws";
+import { WebSocketServer } from "ws";
+import { Room } from "./types/types";
+import MessageValidation from "./middleware/validation";
 
 const wss = new WebSocketServer({port: 8080});
 
-interface Room{
-    sockets: WebSocket[]
-}
-
-let users: Record<string, Room> = {};
+let users: Record<string, Room> = {}; // Record restricts for type string | number but where as Map can take any type as Key value
 
 wss.on("connection", (ws) => {
     ws.on("error", (err) => console.log(err))
 
     ws.on("message", (data) => {
-       const {type, payload} = JSON.parse(data.toString());
-       if (type == "create") {
-         if (!users[payload.roomId]) {
-           users[payload.roomId] = { sockets: [] };
-         }
-         users[payload.roomId].sockets.push(ws);
-       }
-        if(type=="join"){
-            if (!users[payload.roomId]) {
-                throw new Error("Room does not found")
+        try {
+            const validate = MessageValidation(data.toString());
+            
+            if(!validate.isValid){
+                ws.send(
+                  JSON.stringify({
+                    type: "error",
+                    message: validate.errMsg,
+                  })
+                );
+
+                return;
             }
-            users[payload.roomId].sockets.push(ws);
-        }
-        if(type == "chat"){
-            users[payload.roomId].sockets.forEach((socket) => {
-                if(socket!=ws)
-                    socket.send(payload.message);
-            })
+
+            const { type, payload } = validate.message!;
+
+            if (type == "create") {
+              if (!users[payload.roomId]) {
+                users[payload.roomId] = { id: payload.roomId, sockets: [] };
+              }
+              users[payload.roomId].sockets.push(ws);
+            }
+            if (type == "join") {
+              if (!users[payload.roomId]) {
+                throw new Error("Room does not found");
+              }
+              users[payload.roomId].sockets.push(ws);
+            }
+            if (type == "chat") {
+              console.log(validate.message)
+              users[payload.roomId].sockets.forEach((socket) => {
+                if (socket != ws) socket.send(payload.message!);
+              });
+            }
+        } catch (error) {
+            console.log(error);
+            ws.send(
+              JSON.stringify({
+                type: "error",
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Server error occurred",
+              })
+            );
         }
     })
 
