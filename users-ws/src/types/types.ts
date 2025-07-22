@@ -5,12 +5,13 @@ interface Message {
   payload: {
     roomId: string;
     message?: string;
+    senderName?: string;
   };
 }
 
 interface Room {
   id: string;
-  sockets: WebSocket[];
+  sockets: {name: string, socket: WebSocket}[];
 }
 
 interface ValidationResult{

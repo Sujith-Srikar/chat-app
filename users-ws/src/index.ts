@@ -14,13 +14,12 @@ wss.on("connection", (ws) => {
             const validate = MessageValidation(data.toString());
             
             if(!validate.isValid){
-                ws.send(
-                  JSON.stringify({
-                    type: "error",
-                    message: validate.errMsg,
-                  })
-                );
+                const err = {
+                  type: "error",
+                  message: validate.errMsg,
+                };
 
+                ws.send(JSON.stringify(err));
                 return;
             }
 
@@ -30,37 +29,46 @@ wss.on("connection", (ws) => {
               if (!users[payload.roomId]) {
                 users[payload.roomId] = { id: payload.roomId, sockets: [] };
               }
-              users[payload.roomId].sockets.push(ws);
+              if (!payload.senderName)
+                throw new Error("Username is not defined");
+              users[payload.roomId].sockets.push({ name: payload.senderName, socket: ws });
             }
             if (type == "join") {
               if (!users[payload.roomId]) {
-                throw new Error("Room does not found");
+                users[payload.roomId] = { id: payload.roomId, sockets: [] };
               }
-              users[payload.roomId].sockets.push(ws);
+              if(!payload.senderName)
+                throw new Error("Username is not defined");
+              users[payload.roomId].sockets.push({ name: payload.senderName, socket: ws });
             }
             if (type == "chat") {
-              console.log(validate.message)
               users[payload.roomId].sockets.forEach((socket) => {
-                if (socket != ws) socket.send(payload.message!);
+                const data = {
+                  type: "chat",
+                  message: payload.message,
+                  senderName: payload.senderName,
+                };
+
+                if (socket.socket != ws) socket.socket.send(JSON.stringify(data));
               });
             }
         } catch (error) {
             console.log(error);
-            ws.send(
-              JSON.stringify({
-                type: "error",
-                message:
-                  error instanceof Error
-                    ? error.message
-                    : "Server error occurred",
-              })
-            );
+            const err = {
+              type: "error",
+              message:
+                error instanceof Error
+                  ? error.message
+                  : "Server error occurred",
+            };
+
+            ws.send(JSON.stringify(err));
         }
     })
 
     ws.on("close", () => {
         Object.keys(users).forEach((roomId) => {
-            users[roomId].sockets = users[roomId].sockets.filter(socket => socket !== ws);
+            users[roomId].sockets = users[roomId].sockets.filter(socket => socket.socket !== ws);
 
             if(users[roomId].sockets.length===0)
                 delete users[roomId]
