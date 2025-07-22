@@ -6,6 +6,7 @@ import { useSocket } from "@/hooks/useSocket";
 interface MessageFormat {
   msg: string;
   isMine: boolean;
+  name: string;
 }
 
 export default function Room() {
@@ -35,7 +36,7 @@ export default function Room() {
 
       setMessages((prevmsg) => [
         ...prevmsg,
-        { msg: userMsg.trim(), isMine: true },
+        { msg: userMsg.trim(), isMine: true, name: "You" },
       ]);
       socket.send(JSON.stringify(data));
       setUserMsg("");
@@ -48,24 +49,19 @@ export default function Room() {
     if (!socket) return;
 
     socket.onmessage = (msg) => {
-      if (typeof msg.data == "object") {
+      const parsedData = JSON.parse(msg.data);
         try {
-          const parsedData = JSON.parse(msg.data);
           if (parsedData.type === "error") {
             setError(parsedData.message);
           }
         } catch (e) {
           console.error("Failed to parse message data:", e);
         }
-        return;
-      } else {
-        setError("");
         setMessages((prevMessages) => [
           ...prevMessages,
-          { msg: msg.data, isMine: false },
+          { msg: parsedData.payload.message, isMine: false, name: parsedData.payload.senderName},
         ]);
       }
-    };
 
     socket.onerror = (error) => {
       console.error("Socket error:", error);

@@ -5,24 +5,24 @@ import { useRouter } from "next/navigation";
 
 export default function Home() {
   const { socket } = useSocket();
-  const [roomId, setRoomId] = useState("");
-  const [userName, setUserName] = useState("");
+  const [form, setForm] = useState<{roomId: string, userName: string}>({roomId:"", userName:""})
   const router = useRouter();
 
   function handleJoin() {
     try {
       if (!socket) throw new Error("Socket connection is not proper");
-      if (!roomId.trim()) return;
+      if (!form.roomId.trim()) return;
 
       const data = {
         type: "join",
         payload: {
-          roomId: roomId.trim(),
+          roomId: form.roomId.trim(),
+          senderName: form.userName.trim()
         },
       };
 
       socket.send(JSON.stringify(data));
-      router.push(`/${roomId.trim()}`);
+      router.push(`/${form.roomId.trim()}`);
     } catch (error) {
       console.log(error);
     }
@@ -93,8 +93,8 @@ export default function Home() {
           <input
             type="text"
             placeholder="Enter your name"
-            value={userName}
-            onChange={(e) => setUserName(e.target.value)}
+            value={form.userName}
+            onChange={(e) => setForm({ ...form, userName: e.target.value })}
             className="w-full bg-transparent border border-gray-600 rounded-lg px-4 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-gray-500"
           />
 
@@ -102,14 +102,14 @@ export default function Home() {
             <input
               type="text"
               placeholder="Enter Room Code"
-              value={roomId}
-              onChange={(e) => setRoomId(e.target.value)}
+              value={form.roomId}
+              onChange={(e) => setForm({ ...form, roomId: e.target.value })}
               onKeyPress={(e) => e.key === "Enter" && handleJoin()}
               className="flex-1 bg-transparent border border-gray-600 rounded-lg px-4 py-4 text-white placeholder-gray-400 focus:outline-none focus:border-gray-500"
             />
             <button
               onClick={handleJoin}
-              disabled={!roomId.trim() || !socket}
+              disabled={!form.roomId.trim() || !socket || !form.userName.trim()}
               className="bg-white text-black px-6 py-4 rounded-lg font-medium hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Join Room
