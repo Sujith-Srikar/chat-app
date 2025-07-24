@@ -83,7 +83,7 @@ describe("Chat Application Tests", () => {
     const received = await messagePromise;
 
     // Check received message
-    expect(received.message).toBe(testMessage);
+    expect(received.payload.message).toBe(testMessage);
 
     // Clean up
     ws1.close();
@@ -196,7 +196,7 @@ describe("Chat Application Tests", () => {
     const received = await messagePromise;
 
     // Check received message
-    expect(received.message).toBe(testMessage);
+    expect(received.payload.message).toBe(testMessage);
 
     // Clean up
     ws1.close();
@@ -247,7 +247,7 @@ describe("Chat Application Tests", () => {
     const received = await messagePromise;
 
     // Verify message was received by ws3 but not ws2 (which is closed)
-    expect(received.message).toBe("Are you there?");
+    expect(received.payload.message).toBe("Are you there?");
 
     // Clean up
     ws1.close();
@@ -430,8 +430,10 @@ describe("Chat Application Tests", () => {
     // Check if the response includes both message and username
     expect(received).toEqual({
       type: "chat",
-      message: testMessage,
-      senderName: userName,
+      payload: {
+        message: "Message with username",
+        senderName: "SpecialTestUser",
+      },
     });
 
     // Clean up

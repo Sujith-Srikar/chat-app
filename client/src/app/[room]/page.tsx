@@ -16,6 +16,7 @@ export default function Room() {
   const { socket } = useSocket();
   const roomId = useParams().room as string;
   const [error, setError] = useState("");
+  const [userName, setUserName] = useState("");
 
   function handleClipBoard() {
     navigator.clipboard.writeText(roomId);
@@ -31,6 +32,7 @@ export default function Room() {
         payload: {
           roomId: roomId,
           message: userMsg.trim(),
+          senderName: userName
         },
       };
 
@@ -48,8 +50,16 @@ export default function Room() {
   useEffect(() => {
     if (!socket) return;
 
+    const name = localStorage.getItem('userName');
+    if(!name){
+      setError("UserName not defined")
+      return;
+    }
+    setUserName(name);
+
     socket.onmessage = (msg) => {
       const parsedData = JSON.parse(msg.data);
+      console.log(parsedData)
         try {
           if (parsedData.type === "error") {
             setError(parsedData.message);
@@ -57,20 +67,30 @@ export default function Room() {
         } catch (e) {
           console.error("Failed to parse message data:", e);
         }
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { msg: parsedData.payload.message, isMine: false, name: parsedData.payload.senderName},
-        ]);
+        if (parsedData.type === "chat") {
+          if (parsedData.payload.senderName != name) {
+          
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            {
+              msg: parsedData.payload.message,
+              isMine: false,
+              name: parsedData.payload.senderName || "Unknown",
+            },
+          ]);
+        }
       }
 
     socket.onerror = (error) => {
       console.error("Socket error:", error);
     };
+    console.log(messages);
 
     return () => {
       socket.onmessage = null;
       socket.onerror = null;
     };
+  };
   }, [socket, roomId]);
 
   if (error)
@@ -162,10 +182,11 @@ export default function Room() {
               .map((msg, idx) => (
                 <div
                   key={idx}
-                  className={`flex ${
-                    msg.isMine ? "justify-end" : "justify-start"
+                  className={`flex flex-col ${
+                    msg.isMine ? "items-end" : "items-start"
                   }`}
                 >
+                  <div>{msg.name}</div>
                   <div
                     className={`max-w-[80%] px-3 py-2 rounded-lg ${
                       msg.isMine

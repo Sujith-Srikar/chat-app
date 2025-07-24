@@ -1,0 +1,14 @@
+{
+  "name": "relayer-ws",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/ws": "^8.18.1",
+    "ws": "^8.18.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}

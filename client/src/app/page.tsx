@@ -13,6 +13,8 @@ export default function Home() {
       if (!socket) throw new Error("Socket connection is not proper");
       if (!form.roomId.trim()) return;
 
+      localStorage.setItem('userName', form.userName);
+
       const data = {
         type: "join",
         payload: {
